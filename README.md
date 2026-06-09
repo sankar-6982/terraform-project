@@ -49,3 +49,14 @@
 **Checked the created instance from AWS console:**
 
 <img width="940" height="246" alt="image" src="https://github.com/user-attachments/assets/75e88a4f-492e-47b9-b12d-478c3ce21880" />
+
+**2. Ansible setup:**
+
+**Logged in the web server to install ansible into it:**
+
+<img width="940" height="380" alt="image" src="https://github.com/user-attachments/assets/243ae870-924e-4a84-8c06-21517a63829d" />
+
+**Ran the below command to install ansible:**
+
+<img width="940" height="119" alt="image" src="https://github.com/user-attachments/assets/2ddc747e-2de2-43cf-9647-78c99f133440" />
+
