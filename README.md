@@ -60,3 +60,7 @@
 
 <img width="940" height="119" alt="image" src="https://github.com/user-attachments/assets/2ddc747e-2de2-43cf-9647-78c99f133440" />
 
+**Verified the installation:**
+
+<img width="1415" height="260" alt="image" src="https://github.com/user-attachments/assets/ecbeb119-f337-4c7f-b72d-d870b75a0551" />
+
