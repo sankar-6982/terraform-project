@@ -64,3 +64,37 @@
 
 <img width="1415" height="260" alt="image" src="https://github.com/user-attachments/assets/ecbeb119-f337-4c7f-b72d-d870b75a0551" />
 
+**Uploaded the pem key into the web server and created a directory named ansible:**
+
+<img width="706" height="121" alt="image" src="https://github.com/user-attachments/assets/1f8523fb-6145-4346-b4f1-109c7bec2d2f" />
+
+**Created the inventory.ini file into the ansible directory and have attached the yaml file in repo:**
+
+<img width="878" height="298" alt="image" src="https://github.com/user-attachments/assets/32e84430-9564-4134-a4e3-0a002cd32c0c" />
+
+**Created the web.yml file and have added the yaml file in repo:**
+
+<img width="869" height="646" alt="image" src="https://github.com/user-attachments/assets/ba243983-fd1a-4b2b-9829-205f443423b6" />
+
+**Tested the web.yml file:**
+
+<img width="940" height="114" alt="image" src="https://github.com/user-attachments/assets/f5a52f0c-0d73-4d5c-a94b-a4ee0fb8a258" />
+
+**Created db.yml file and tested it. The same yaml file as been added in repo:**
+
+<img width="940" height="406" alt="image" src="https://github.com/user-attachments/assets/cc855f9b-1f88-44f2-b050-a09fbe01c573" />
+
+<img width="940" height="127" alt="image" src="https://github.com/user-attachments/assets/054dc63c-9e24-46e3-a006-baef20cb9829" />
+
+**Created the deploy.yml and tested it. The deploy.yml is added in the repo:**
+
+  <img width="1902" height="355" alt="image" src="https://github.com/user-attachments/assets/dceed690-fea4-49b5-a96b-95f132104f2c" />
+
+**Verified if the application is working fine:**
+
+<img width="940" height="361" alt="image" src="https://github.com/user-attachments/assets/e0ea20b1-4ca6-4623-8181-a65ed607bbd4" />
+
+**Disabled the root login:**
+
+<img width="940" height="112" alt="image" src="https://github.com/user-attachments/assets/73c0a47d-b23a-4075-b9c4-387c908ff5f8" />
+
