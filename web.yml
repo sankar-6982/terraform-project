@@ -1,0 +1,100 @@
+---
+- name: Deploy TravelMemory MERN App (Clean AWS Version)
+  hosts: web
+  become: yes
+
+  vars:
+    app_dir: /opt/travelmemory
+    db_ip: 10.0.2.251
+    app_port: 5000
+
+  tasks:
+
+    # ---------------- SYSTEM UPDATE ----------------
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install required packages
+      dnf:
+        name:
+          - git
+          - gcc-c++
+        state: present
+
+    # ---------------- NODEJS ----------------
+    - name: Install Node.js 20
+      shell: |
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+        dnf install -y nodejs
+      args:
+        creates: /usr/bin/node
+
+    - name: Verify Node.js installation
+      command: node -v
+      register: node_version
+
+    - debug:
+        var: node_version.stdout
+
+    # ---------------- PM2 ----------------
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+
+    # ---------------- APPLICATION CODE ----------------
+    - name: Clone repository
+      git:
+        repo: https://github.com/UnpredictablePrashant/TravelMemory.git
+        dest: "{{ app_dir }}"
+        force: yes
+
+    # ---------------- BACKEND ----------------
+    - name: Install backend dependencies
+      shell: |
+        cd {{ app_dir }}/backend
+        npm install
+
+    - name: Create backend .env file
+      copy:
+        dest: "{{ app_dir }}/backend/.env"
+        content: |
+          PORT={{ app_port }}
+          CONNECTION_URL=mongodb://traveladmin:Travel@123@{{ db_ip }}:27017/travelmemory
+
+    # ---------------- FRONTEND ----------------
+    - name: Install frontend dependencies
+      shell: |
+        cd {{ app_dir }}/frontend
+        npm install
+
+    - name: Create frontend .env file
+      copy:
+        dest: "{{ app_dir }}/frontend/.env"
+        content: |
+          REACT_APP_API=http://3.108.44.236:5000
+
+    - name: Build frontend
+      shell: |
+        cd {{ app_dir }}/frontend
+        npm run build
+
+    # ---------------- BACKEND RUN ----------------
+    - name: Stop existing PM2 process if any
+      shell: pm2 delete travelmemory || true
+      ignore_errors: yes
+
+    - name: Start backend with PM2
+      shell: |
+        cd {{ app_dir }}/backend
+        pm2 start index.js --name travelmemory
+
+    - name: Save PM2 process list
+      shell: pm2 save
+
+    - name: Setup PM2 startup service
+      shell: |
+        pm2 startup systemd -u ec2-user --hp /home/ec2-user
+      ignore_errors: yes

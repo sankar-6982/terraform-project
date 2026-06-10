@@ -1,0 +1,165 @@
+---
+- name: Deploy TravelMemory Full Stack (Web + DB)
+  hosts: all
+  become: yes
+
+  vars:
+    app_dir: /opt/travelmemory
+    db_ip: 10.0.2.251
+    app_port: 5000
+
+  tasks:
+
+    # =====================================================
+    # COMMON SYSTEM UPDATE
+    # =====================================================
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+
+    # =====================================================
+    # WEB SERVER SETUP
+    # =====================================================
+    - name: Install web dependencies
+      dnf:
+        name:
+          - git
+          - gcc-c++
+        state: present
+      when: inventory_hostname in groups['web']
+
+    - name: Install Node.js 20 (web only)
+      shell: |
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+        dnf install -y nodejs
+      args:
+        creates: /usr/bin/node
+      when: inventory_hostname in groups['web']
+
+    - name: Install PM2 (web only)
+      npm:
+        name: pm2
+        global: yes
+      when: inventory_hostname in groups['web']
+
+    - name: Clone repository (web only)
+      git:
+        repo: https://github.com/UnpredictablePrashant/TravelMemory.git
+        dest: "{{ app_dir }}"
+        force: yes
+      when: inventory_hostname in groups['web']
+
+    - name: Install backend dependencies (web only)
+      shell: |
+        cd {{ app_dir }}/backend
+        npm install
+      when: inventory_hostname in groups['web']
+
+    - name: Install frontend dependencies (web only)
+      shell: |
+        cd {{ app_dir }}/frontend
+        npm install
+      when: inventory_hostname in groups['web']
+
+    - name: Create backend .env
+      copy:
+        dest: "{{ app_dir }}/backend/.env"
+        content: |
+          PORT={{ app_port }}
+          CONNECTION_URL=mongodb://traveladmin:Travel@123@{{ db_ip }}:27017/travelmemory
+      when: inventory_hostname in groups['web']
+
+    - name: Create frontend .env
+      copy:
+        dest: "{{ app_dir }}/frontend/.env"
+        content: |
+          REACT_APP_API=http://3.108.44.236:5000
+      when: inventory_hostname in groups['web']
+
+    - name: Build frontend
+      shell: |
+        cd {{ app_dir }}/frontend
+        npm run build
+      when: inventory_hostname in groups['web']
+
+    - name: Restart backend with PM2
+      shell: |
+        cd {{ app_dir }}/backend
+        pm2 delete travelmemory || true
+        pm2 start index.js --name travelmemory
+        pm2 save
+      when: inventory_hostname in groups['web']
+
+    # =====================================================
+    # DB SERVER SETUP (FIXED)
+    # =====================================================
+
+    - name: Add MongoDB repo (db only)
+      copy:
+        dest: /etc/yum.repos.d/mongodb-org-7.0.repo
+        content: |
+          [mongodb-org-7.0]
+          name=MongoDB Repository
+          baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/7.0/x86_64/
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://pgp.mongodb.com/server-7.0.asc
+      when: inventory_hostname in groups['db']
+
+    - name: Install MongoDB (db only)
+      dnf:
+        name: mongodb-org
+        state: present
+      when: inventory_hostname in groups['db']
+
+    - name: Enable and start MongoDB (db only)
+      systemd:
+        name: mongod
+        enabled: yes
+        state: started
+      when: inventory_hostname in groups['db']
+
+    - name: Wait for MongoDB to be ready
+      wait_for:
+        host: 127.0.0.1
+        port: 27017
+        delay: 5
+        timeout: 60
+      when: inventory_hostname in groups['db']
+
+    - name: Allow external connections (bind IP fix)
+      replace:
+        path: /etc/mongod.conf
+        regexp: "bindIp: 127.0.0.1"
+        replace: "bindIp: 0.0.0.0"
+      when: inventory_hostname in groups['db']
+
+    - name: Restart MongoDB after config change
+      systemd:
+        name: mongod
+        state: restarted
+      when: inventory_hostname in groups['db']
+
+    - name: Wait again after restart
+      wait_for:
+        host: 127.0.0.1
+        port: 27017
+        delay: 5
+        timeout: 60
+      when: inventory_hostname in groups['db']
+
+    - name: Create MongoDB user (safe idempotent)
+      shell: |
+        mongosh --host 127.0.0.1 --eval '
+        use travelmemory;
+        if (!db.getUser("traveladmin")) {
+          db.createUser({
+            user: "traveladmin",
+            pwd: "Travel@123",
+            roles: [{ role: "readWrite", db: "travelmemory" }]
+          })
+        }'
+      args:
+        executable: /bin/bash
+      when: inventory_hostname in groups['db']

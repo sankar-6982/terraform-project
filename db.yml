@@ -1,0 +1,64 @@
+---
+- name: Setup MongoDB on Private EC2 (Amazon Linux 2023 - Fixed)
+  hosts: db
+  become: yes
+
+  tasks:
+
+    # ---------------- SYSTEM UPDATE ----------------
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+
+    # ---------------- MONGODB REPOSITORY ----------------
+    - name: Add MongoDB repository
+      copy:
+        dest: /etc/yum.repos.d/mongodb-org-7.0.repo
+        content: |
+          [mongodb-org-7.0]
+          name=MongoDB Repository
+          baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/7.0/x86_64/
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://pgp.mongodb.com/server-7.0.asc
+
+    # ---------------- INSTALL MONGODB ----------------
+    - name: Install MongoDB packages
+      dnf:
+        name: mongodb-org
+        state: present
+
+    # ---------------- START MONGODB ----------------
+    - name: Enable and start MongoDB service
+      systemd:
+        name: mongod
+        enabled: yes
+        state: started
+
+    # ---------------- CONFIGURE BIND IP ----------------
+    - name: Allow external connections (bind to all interfaces)
+      replace:
+        path: /etc/mongod.conf
+        regexp: "bindIp: 127.0.0.1"
+        replace: "bindIp: 0.0.0.0"
+
+    - name: Restart MongoDB after configuration change
+      systemd:
+        name: mongod
+        state: restarted
+
+    # ---------------- CREATE DATABASE USER ----------------
+    - name: Create MongoDB database and user
+      shell: |
+        mongosh --eval '
+        use travelmemory;
+        db.createUser({
+          user: "traveladmin",
+          pwd: "Travel@123",
+          roles: [
+            { role: "readWrite", db: "travelmemory" }
+          ]
+        })'
+      args:
+        executable: /bin/bash
